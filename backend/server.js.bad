@@ -1,0 +1,129 @@
+const express = require("express");
+const fs = require("fs");
+const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const XLSX = require("xlsx");
+
+const { auth, role, SECRET } = require("./middleware/auth");
+
+const app = express();
+
+// middlewares
+app.use(cors());
+app.use(express.json());
+app.use("/uploads", express.static("uploads"));
+
+// upload config
+const upload = multer({ dest: "uploads/" });
+
+// file paths
+const USERS = "./data/users.json";
+const TASKS = "./data/tasks.json";
+
+// utils
+const read = (file) => JSON.parse(fs.readFileSync(file));
+const write = (file, data) =>
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+
+// ð LOGIN
+app.post("/login", (req, res) => {
+  const users = read(USERS);
+
+  const user = users.find(
+    (u) =>
+      u.username === req.body.username &&
+      u.password === req.body.password
+  );
+
+  if (!user) return res.status(401).json({ message: "Invalid credentials" });
+
+  const token = jwt.sign(user, SECRET);
+
+  res.json({ token, role: user.role });
+});
+
+// ð GET TASKS
+app.get("/tasks", auth, (req, res) => {
+  const tasks = read(TASKS);
+  res.json(tasks);
+});
+
+// â CREATE TASK (manager)
+app.post(
+  "/tasks",
+  auth,
+  role("manager"),
+  upload.single("image"),
+  (req, res) => {
+    const tasks = read(TASKS);
+
+    const task = {
+      id: Date.now(),
+      title: req.body.title,
+      address: req.body.address,
+      phone: req.body.phone,
+      assignedTo: req.body.assignedTo,
+      image: req.file ? req.file.filename : null,
+      status: "pending",
+      comment: ""
+    };
+
+    tasks.push(task);
+    write(TASKS, tasks);
+
+    res.json(task);
+  }
+);
+
+// âœ” COMPLETE TASK (technician)
+app.put(
+  "/tasks/:id/complete",
+  auth,
+  role("technician"),
+  upload.single("image"),
+  (req, res) => {
+    const tasks = read(TASKS);
+    const task = tasks.find((t) => t.id == req.params.id);
+
+    if (!task) return res.status(404).json({ message: "Task not found" });
+
+    task.status = "done";
+    task.comment = req.body.comment || "";
+    task.completedImage = req.file ? req.file.filename : null;
+
+    write(TASKS, tasks);
+
+    res.json(task);
+  }
+);
+
+// ðŸ“Š EXPORT EXCEL
+app.get("/export", auth, role("admin"), (req, res) => {
+  const tasks = read(TASKS);
+
+  const worksheet = XLSX.utils.json_to_sheet(tasks);
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Tasks");
+
+  const filePath = "./tasks.xlsx";
+  XLSX.writeFile(workbook, filePath);
+
+  res.download(filePath);
+});
+
+//  START SERVER
+app.listen(3000, "0.0.0.0", () => {
+  console.log("ðŸ”¥ Backend running on 0.0.0.0:3000");
+});
+// ð GET TECHNICIANS
+app.get('/users', async (req, res) => {
+  try {
+    const users = await all("SELECT id, username, role FROM users");
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});

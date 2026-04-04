@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: ./backend
+    restart: always
+    volumes:
+      - ./backend:/app
+
+  nginx:
+    image: nginx:latest
+    container_name: shota-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend:/usr/share/nginx/html
+    depends_on:
+      - app

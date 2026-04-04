@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>🛠 Admin Panel</h1>
+
+  <button onclick="logout()">Logout</button>
+  <button onclick="exportExcel()">📊 Export Excel</button>
+
+  <h2>➕ Create Task</h2>
+
+  <input id="title" placeholder="Title"><br>
+  <input id="address" placeholder="Address"><br>
+  <input id="phone" placeholder="Phone"><br>
+  <select id="technician"></select><br>
+  <input type="file" id="image"><br>
+
+  <button onclick="createTask()">Create Task</button>
+
+  <h2>📋 All Tasks</h2>
+
+  <div id="tasks"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

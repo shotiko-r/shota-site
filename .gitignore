@@ -1,0 +1,9 @@
+# DB / data
+backend/data/*.json
+
+# uploads
+backend/uploads/
+
+# node_modules
+node_modules/
+backend/node_modules/
